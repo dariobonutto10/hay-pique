@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b3d4f">
+<title>Hay Pesca</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐟%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--bg:#eef5f4;--card:#fff;--ink:#0d2b33;--mut:#5b7a82;--main:#0b3d4f;--acc:#ff8a3d;--ok:#1fa67a;--line:#d3e3e1}
+@media(prefers-color-scheme:dark){:root{--bg:#0a1b20;--card:#11303a;--ink:#e6f3f2;--mut:#8fb0b6;--main:#062a36;--line:#1d4551}}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:"Trebuchet MS",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+header{background:var(--main);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px}
+header svg{width:44px;height:30px;flex:none}header h1{font-size:22px;margin:0;letter-spacing:.5px}
+header small{display:block;opacity:.75;font-size:12px}
+main{flex:1;overflow:auto;padding:12px}
+section{display:none}section.on{display:block}
+nav{display:flex;background:var(--main);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:#9fc3c9;padding:10px 0;font-size:12px}
+nav button b{display:block;font-size:20px}nav button.on{color:#fff;border-top:3px solid var(--acc)}
+.card{background:var(--card);border-radius:14px;padding:12px;margin-bottom:12px;border:1px solid var(--line)}
+button.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:15px;font-weight:700}
+button.alt{background:var(--main);color:#fff}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;margin:4px 0 8px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.sc{overflow-x:auto;border-radius:8px}
+.leg span{display:inline-block;margin-right:10px;font-size:13px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.hr{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0}
+.hr .t{width:42px;text-align:right;color:var(--mut)}
+.hr .bar{flex:1;height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.hr .bar div{height:100%;border-radius:7px}
+.hr .s{width:62px;font-size:12px;color:var(--acc)}
+.chip{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:3px 3px 0 0;font-size:13px}
+.best{background:#ffe9d6;border-radius:6px;font-weight:700;color:#7a3300}
+#map{height:calc(100vh - 230px);min-height:320px;border-radius:14px}
+.pq{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.res{padding:8px;border-bottom:1px solid var(--line)}
+.mut{color:var(--mut);font-size:13px}
+</style></head><body>
+<header>
+<svg viewBox="0 0 88 60"><path d="M6 30 L22 16 L22 44Z" fill="#ff8a3d"/><ellipse cx="46" cy="30" rx="34" ry="22" fill="#ffb347"/><path d="M40 9 Q48 0 58 8Z" fill="#ff8a3d"/><circle cx="66" cy="24" r="7" fill="#fff"/><circle cx="68" cy="24" r="3.5" fill="#0d2b33"/><path d="M60 38 Q68 46 76 36" stroke="#0d2b33" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="30" cy="32" r="3" fill="#ff8a3d"/><circle cx="38" cy="40" r="3" fill="#ff8a3d"/><circle cx="38" cy="22" r="3" fill="#ff8a3d"/></svg>
+<div><h1>Hay Pesca</h1><small id="locname">Sin ubicación</small></div>
+</header>
+<main>
+<section id="s-clima" class="on">
+<div class="card"><div class="row"><input id="q" placeholder="Buscar localidad…"><button class="btn alt" style="flex:none" onclick="buscar()">Buscar</button></div>
+<button class="btn" style="width:100%" onclick="miGPS(true)">📍 Usar mi ubicación</button><div id="res"></div></div>
+<div class="card"><div id="now"></div><div class="leg" id="leg"></div><div class="sc" id="chart"></div><div class="mut" id="rng"></div></div>
+</section>
+<section id="s-sol">
+<div class="card"><div class="row"><button class="btn alt" onclick="dia(-1)">◀</button><div id="sdate" style="text-align:center;align-self:center;font-weight:700"></div><button class="btn alt" onclick="dia(1)">▶</button></div>
+<div id="sinfo" style="margin-top:8px"></div></div>
+<div class="card"><div id="stab"></div><p class="mut">Calculado en el teléfono con la posición de la Luna y el Sol; funciona sin conexión. Las mejores horas son las cercanas al paso de la Luna (mayor), su salida/puesta (menor) y el amanecer/atardecer.</p></div>
+</section>
+<section id="s-map">
+<div class="row" style="margin-bottom:8px"><button class="btn alt" onclick="miGPS(false)">📍 Mi posición</button><button class="btn" onclick="marcarAqui()">🎣 Marcar pique aquí</button></div>
+<div id="map"></div><div class="mut" id="mapinfo">Toca el mapa para elegir un punto.</div>
+</section>
+<section id="s-pq">
+<div class="card"><b>Nuevo registro</b>
+<input id="pc" readonly placeholder="Elige un punto en el mapa o usa tu GPS">
+<input id="pf" type="datetime-local">
+<select id="pe"><option value="0">😴 Sin pique</option><option value="1">🙂 Flojo</option><option value="2" selected>😄 Bueno</option><option value="3">🔥 Excelente</option></select>
+<div class="row"><input id="pd" type="number" step="0.1" placeholder="Profundidad (m)"><input id="pb" placeholder="Carnada"></div>
+<textarea id="pn" rows="2" placeholder="Notas (opcional)"></textarea>
+<div class="row"><button class="btn" onclick="guardar()">Guardar pique</button><button class="btn alt" onclick="go('map')">Elegir en mapa</button></div></div>
+<div class="card"><b>Mis piques</b> <span class="mut" id="cnt"></span><div id="lista"></div></div>
+</section>
+</main>
+<nav>
+<button class="on" data-t="clima"><b>🌦️</b>Clima</button>
+<button data-t="sol"><b>🌙</b>Solunar</button>
+<button data-t="map"><b>🗺️</b>Mapa</button>
+<button data-t="pq"><b>🎣</b>Piques</button>
+</nav>
+<script>
+const $=s=>document.querySelector(s),R=Math.PI/180;
+const ld=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let loc=ld('hp_loc',{lat:-34.6,lon:-58.4,name:'Buenos Aires'}),piques=ld('hp_pq',[]),off=0,pick=null,map,mk,gpsMk,layer;
+const pad=n=>String(n).padStart(2,'0'),hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+/* navegación */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+function go(t){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
+if(t==='map'){initMap();setTimeout(()=>map&&map.invalidateSize(),100)}if(t==='sol')solunar();}
+function setLoc(l){loc=l;sv('hp_loc',l);$('#locname').textContent=l.name;clima();solunar();if(map)map.setView([l.lat,l.lon],11)}
+/* búsqueda */
+async function buscar(){const q=$('#q').value.trim();if(!q)return;
+try{const r=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=es&name='+encodeURIComponent(q))).json();
+$('#res').innerHTML=(r.results||[]).map((x,i)=>`<div class="res" data-i="${i}">${x.name}, ${x.admin1||''} ${x.country||''}</div>`).join('')||'<div class="mut">Sin resultados.</div>';
+document.querySelectorAll('.res[data-i]').forEach(e=>e.onclick=()=>{const x=r.results[e.dataset.i];$('#res').innerHTML='';setLoc({lat:x.latitude,lon:x.longitude,name:x.name})})}
+catch(e){$('#res').innerHTML='<div class="mut">Sin conexión: la búsqueda necesita internet.</div>'}}
+/* GPS */
+function miGPS(setl){navigator.geolocation.getCurrentPosition(p=>{const c={lat:p.coords.latitude,lon:p.coords.longitude};
+if(setl)setLoc({...c,name:'Mi ubicación'});
+if(map){if(gpsMk)map.removeLayer(gpsMk);gpsMk=L.circleMarker([c.lat,c.lon],{radius:9,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map).bindPopup('Estás aquí');map.setView([c.lat,c.lon],14);setPick(c.lat,c.lon)}
+else if(!setl){go('map');setTimeout(()=>miGPS(false),300)}},()=>alert('No se pudo obtener el GPS. Revisa el permiso de ubicación.'),{enableHighAccuracy:true,timeout:15000})}
+/* clima */
+async function clima(){$('#locname').textContent=loc.name;let d;const key='hp_w_'+loc.lat.toFixed(2)+'_'+loc.lon.toFixed(2);
+try{d=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=temperature_2m,precipitation,wind_speed_10m,pressure_msl&forecast_days=3&timezone=auto`)).json();sv(key,d)}
+catch(e){d=ld(key,null)}
+if(!d||!d.hourly){$('#chart').innerHTML='<p class="mut">Sin datos. Conéctate una vez para guardar el pronóstico.</p>';return}
+draw(d)}
+function draw(d){const H=d.hourly,n=H.time.length,T=H.temperature_2m,P=H.pressure_msl,W=H.wind_speed_10m,Pr=H.precipitation;
+const mm=a=>[Math.min(...a),Math.max(...a)],[t0,t1]=mm(T),[p0,p1]=mm(P),w1=Math.max(...W,10),pr1=Math.max(...Pr,2);
+const X=i=>i*10+5,yT=v=>200-(v-t0)/((t1-t0)||1)*150,yP=v=>200-(v-p0)/((p1-p0)||1)*150,yW=v=>220-v/w1*60;
+const line=(a,f,c,dash)=>`<polyline fill="none" stroke="${c}" stroke-width="2.5" ${dash?'stroke-dasharray="5 4"':''} points="${a.map((v,i)=>X(i)+','+f(v)).join(' ')}"/>`;
+let g='';H.time.forEach((t,i)=>{const h=+t.slice(11,13);if(h===0)g+=`<line x1="${X(i)-5}" x2="${X(i)-5}" y1="10" y2="225" stroke="#8fb0b6" stroke-dasharray="3 3"/><text x="${X(i)}" y="12" font-size="11" fill="#8fb0b6">${t.slice(8,10)}/${t.slice(5,7)}</text>`;
+if(h%6===0)g+=`<text x="${X(i)}" y="245" font-size="11" fill="#8fb0b6" text-anchor="middle">${pad(h)}h</text>`});
+const nowL=new Date(Date.now()+d.utc_offset_seconds*1000).toISOString().slice(0,13),ni=H.time.findIndex(t=>t.slice(0,13)===nowL);
+const bars=Pr.map((v,i)=>`<rect x="${X(i)-4}" y="${225-v/pr1*45}" width="8" height="${v/pr1*45}" fill="#4aa3ff" opacity=".7"/>`).join('');
+$('#chart').innerHTML=`<svg width="${n*10}" height="255">${g}${bars}${line(P,yP,'#9b5de5')}${line(T,yT,'#ff8a3d')}${line(W,yW,'#1fa67a',1)}${ni>=0?`<line x1="${X(ni)}" x2="${X(ni)}" y1="10" y2="225" stroke="#e63946" stroke-width="2"/>`:''}</svg>`;
+$('#leg').innerHTML='<span><i style="background:#ff8a3d"></i>Temp</span><span><i style="background:#9b5de5"></i>Presión</span><span><i style="background:#1fa67a"></i>Viento</span><span><i style="background:#4aa3ff"></i>Lluvia</span>';
+$('#rng').textContent=`Temp ${t0.toFixed(0)}–${t1.toFixed(0)} °C · Presión ${p0.toFixed(0)}–${p1.toFixed(0)} hPa · Viento hasta ${Math.max(...W).toFixed(0)} km/h · Lluvia máx ${Math.max(...Pr).toFixed(1)} mm`;
+if(ni>=0){const f=Math.min(ni+6,n-1),dp=P[f]-P[ni],tr=Math.abs(dp)<1?'estable ➡️':dp>0?'subiendo ⬆️':'bajando ⬇️';
+$('#now').innerHTML=`<b>Ahora:</b> ${T[ni].toFixed(1)} °C · ${P[ni].toFixed(0)} hPa · ${W[ni].toFixed(0)} km/h<br><span class="mut">Presión próximas 6 h: ${tr} (${dp>0?'+':''}${dp.toFixed(1)} hPa)</span>`}}
+/* astronomía */
+function body(jd){const d=jd-2451543.5,r=Math.PI/180;
+const N=125.1228-.0529538083*d,w=318.0634+.1643573223*d,M=115.3654+13.0649929509*d;
+const Ms=356.047+.9856002585*d,ws=282.9404+4.70935e-5*d,Ls=Ms+ws,Lm=N+w+M,D=Lm-Ls;
+let E=M+(180/Math.PI)*.0549*Math.sin(M*r)*(1+.0549*Math.cos(M*r));
+const xv=60.2666*(Math.cos(E*r)-.0549),yv=60.2666*.9985*Math.sin(E*r),v=Math.atan2(yv,xv)/r,rr=Math.hypot(xv,yv),u=(v+w)*r,Nr=N*r,ic=5.1454*r;
+const xh=rr*(Math.cos(Nr)*Math.cos(u)-Math.sin(Nr)*Math.sin(u)*Math.cos(ic)),yh=rr*(Math.sin(Nr)*Math.cos(u)+Math.cos(Nr)*Math.sin(u)*Math.cos(ic)),zh=rr*Math.sin(u)*Math.sin(ic);
+const lm=Math.atan2(yh,xh)/r-1.274*Math.sin((M-2*D)*r)+.658*Math.sin(2*D*r)-.186*Math.sin(Ms*r),bm=Math.atan2(zh,Math.hypot(xh,yh))/r;
+const ls=Ls+1.915*Math.sin(Ms*r)+.02*Math.sin(2*Ms*r),ec=(23.4393-3.563e-7*d)*r;
+const eq=(l,b)=>{l*=r;b*=r;return[Math.atan2(Math.sin(l)*Math.cos(ec)-Math.tan(b)*Math.sin(ec),Math.cos(l))/r,Math.asin(Math.sin(b)*Math.cos(ec)+Math.cos(b)*Math.sin(ec)*Math.sin(l))/r]};
+return{m:eq(lm,bm),s:eq(ls,0),el:((lm-ls)%360+360)%360}}
+function alt(ra,dec,jd,lat,lon){const g=280.46061837+360.98564736629*(jd-2451545)+lon,ha=(g-ra)*R;
+return Math.asin(Math.sin(lat*R)*Math.sin(dec*R)+Math.cos(lat*R)*Math.cos(dec*R)*Math.cos(ha))/R}
+function dia(x){off+=x;solunar()}
+function solunar(){const t0=new Date();t0.setHours(0,0,0,0);t0.setDate(t0.getDate()+off);const S=6*6e4,N=24*10,ev=[],am=[],as=[];
+for(let i=0;i<=N;i++){const t=t0.getTime()+i*S,jd=t/864e5+2440587.5,b=body(jd);am.push(alt(b.m[0],b.m[1],jd,loc.lat,loc.lon));as.push(alt(b.s[0],b.s[1],jd,loc.lat,loc.lon))}
+const T=i=>t0.getTime()+i*S;
+for(let i=1;i<N;i++){
+if(am[i-1]<.13&&am[i]>=.13)ev.push({t:T(i),k:'minor',l:'🌙 Sale la Luna'});
+if(am[i-1]>=.13&&am[i]<.13)ev.push({t:T(i),k:'minor',l:'🌘 Se pone la Luna'});
+if(am[i]>am[i-1]&&am[i]>=am[i+1])ev.push({t:T(i),k:'major',l:'🌕 Luna en lo alto'});
+if(am[i]<am[i-1]&&am[i]<=am[i+1])ev.push({t:T(i),k:'major',l:'🌑 Luna en lo bajo'});
+if(as[i-1]<-.83&&as[i]>=-.83)ev.push({t:T(i),k:'sun',l:'🌅 Amanecer'});
+if(as[i-1]>=-.83&&as[i]<-.83)ev.push({t:T(i),k:'sun',l:'🌇 Atardecer'})}
+ev.sort((a,b)=>a.t-b.t);
+const bm=body(t0.getTime()/864e5+2440587.5+.5),ill=(1-Math.cos(bm.el*R))/2,k=.8+.2*Math.abs(Math.cos(bm.el*R));
+const ph=['Luna nueva','Creciente','Cuarto creciente','Gibosa creciente','Luna llena','Gibosa menguante','Cuarto menguante','Menguante'][Math.round(bm.el/45)%8];
+const sc=[];for(let h=0;h<24;h++){const c=t0.getTime()+h*36e5+18e5;let s=12;
+ev.forEach(e=>{const dt=Math.abs(e.t-c)/36e5;s+=e.k==='major'?70*Math.max(0,1-dt/1.5):e.k==='minor'?40*Math.max(0,1-dt/1):25*Math.max(0,1-dt/1)});
+sc.push(Math.min(100,Math.round(s*k)))}
+const top=[...sc].sort((a,b)=>b-a)[2];
+$('#sdate').textContent=t0.toLocaleDateString('es',{weekday:'long',day:'numeric',month:'short'});
+$('#sinfo').innerHTML=`<b>${ph}</b> · iluminación ${Math.round(ill*100)}%<br>`+ev.map(e=>`<span class="chip">${e.l} ${hm(new Date(e.t))}</span>`).join('');
+$('#stab').innerHTML=sc.map((s,h)=>{const n=Math.max(1,Math.round(s/20)),col=s>=75?'#ff8a3d':s>=50?'#ffc46b':'#7fb6c2';
+return`<div class="hr ${s>=top&&s>=60?'best':''}"><span class="t">${pad(h)}:00</span><div class="bar"><div style="width:${s}%;background:${col}"></div></div><span class="s">${'★'.repeat(n)}${s>=top&&s>=60?' 🎣':''}</span></div>`}).join('')}
+/* mapa */
+function icono(e){return L.divIcon({html:`<div style="font-size:26px">${['😴','🙂','😄','🔥'][e]}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,14]})}
+function initMap(){if(map)return;map=L.map('map').setView([loc.lat,loc.lon],11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
+layer=L.layerGroup().addTo(map);map.on('click',e=>setPick(e.latlng.lat,e.latlng.lng));pintar()}
+function setPick(a,o){pick={lat:a,lon:o};if(map){if(mk)map.removeLayer(mk);mk=L.marker([a,o]).addTo(map)}
+$('#mapinfo').innerHTML=`Punto: ${a.toFixed(5)}, ${o.toFixed(5)} · <a href="#" onclick="verClima();return false">Ver clima aquí</a>`;$('#pc').value=a.toFixed(5)+', '+o.toFixed(5)}
+function verClima(){setLoc({lat:pick.lat,lon:pick.lon,name:`Punto ${pick.lat.toFixed(3)}, ${pick.lon.toFixed(3)}`});go('clima')}
+function marcarAqui(){if(!pick)return alert('Toca el mapa o usa Mi posición primero.');go('pq')}
+function pintar(){if(!layer)return;layer.clearLayers();piques.forEach(p=>L.marker([p.lat,p.lon],{icon:icono(p.e)}).addTo(layer).bindPopup(`<b>${['Sin pique','Flojo','Bueno','Excelente'][p.e]}</b><br>${new Date(p.f).toLocaleString('es')}<br>Prof: ${p.d||'-'} m<br>Carnada: ${p.b||'-'}<br>${p.n||''}`))}
+/* piques */
+function nowLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
+function guardar(){if(!pick)return alert('Elige un punto en el mapa o usa tu GPS.');
+piques.unshift({id:Date.now(),lat:pick.lat,lon:pick.lon,f:$('#pf').value||nowLocal(),e:+$('#pe').value,d:$('#pd').value,b:$('#pb').value,n:$('#pn').value});
+sv('hp_pq',piques);$('#pd').value=$('#pb').value=$('#pn').value='';lista();pintar()}
+function borrar(id){if(!confirm('¿Borrar este registro?'))return;piques=piques.filter(p=>p.id!==id);sv('hp_pq',piques);lista();pintar()}
+function ver(id){const p=piques.find(x=>x.id===id);go('map');setTimeout(()=>map.setView([p.lat,p.lon],15),150)}
+function lista(){$('#cnt').textContent='('+piques.length+')';
+$('#lista').innerHTML=piques.map(p=>`<div class="pq"><div onclick="ver(${p.id})">${['😴','🙂','😄','🔥'][p.e]} <b>${new Date(p.f).toLocaleString('es',{dateStyle:'short',timeStyle:'short'})}</b><br><span class="mut">${p.d?p.d+' m · ':''}${p.b||'sin carnada'}${p.n?' · '+p.n:''}</span></div><button class="btn alt" onclick="borrar(${p.id})">🗑</button></div>`).join('')||'<p class="mut">Aún no hay registros.</p>'}
+$('#pf').value=nowLocal();lista();clima();solunar();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script></body></html>
