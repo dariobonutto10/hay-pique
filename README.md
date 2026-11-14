@@ -16,6 +16,9 @@ App web instalable (PWA) para pescadores: clima en una sola gráfica, tabla solu
 ## Instalar en Android
 Abre la URL en Chrome → menú ⋮ → **Instalar app** (o **Añadir a pantalla de inicio**). La primera vez necesita internet; después abre sin conexión.
 
+## Generar el APK
+Ver [INSTRUCTIVO-APK.md](INSTRUCTIVO-APK.md): el workflow `Compilar APK` lo genera automáticamente en GitHub Actions.
+
 ## Uso sin conexión
 - Piques y último pronóstico consultado quedan guardados en el teléfono.
 - Los mosaicos del mapa solo están disponibles sin conexión en las zonas que ya viste con internet.

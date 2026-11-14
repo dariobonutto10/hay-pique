@@ -27,6 +27,7 @@ button.alt{background:var(--main);color:#fff}
 input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;margin:4px 0 8px}
 .row{display:flex;gap:8px}.row>*{flex:1}
 .sc{overflow-x:auto;border-radius:8px}
+.tip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 8px}.tip div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 2px;text-align:center;font-size:11px;color:var(--mut)}.tip b{display:block;font-size:17px;color:var(--ink)}.tiph{font-size:13px;margin-top:8px}
 .leg span{display:inline-block;margin-right:10px;font-size:13px}
 .leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
 .hr{display:flex;align-items:center;gap:8px;font-size:13px;padding:2px 0}
@@ -49,7 +50,7 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 <section id="s-clima" class="on">
 <div class="card"><div class="row"><input id="q" placeholder="Buscar localidad…"><button class="btn alt" style="flex:none" onclick="buscar()">Buscar</button></div>
 <button class="btn" style="width:100%" onclick="miGPS(true)">📍 Usar mi ubicación</button><div id="res"></div></div>
-<div class="card"><div id="now"></div><div class="leg" id="leg"></div><div class="sc" id="chart"></div><div class="mut" id="rng"></div></div>
+<div class="card"><div id="now"></div><div class="leg" id="leg"></div><div class="tiph" id="tiph"></div><div class="tip" id="tip"></div><div class="sc" id="chart"></div><div class="mut">Toca la gráfica para ver los valores de cada hora.</div><div class="mut" id="rng"></div></div>
 </section>
 <section id="s-sol">
 <div class="card"><div class="row"><button class="btn alt" onclick="dia(-1)">◀</button><div id="sdate" style="text-align:center;align-self:center;font-weight:700"></div><button class="btn alt" onclick="dia(1)">▶</button></div>
@@ -114,7 +115,16 @@ let g='';H.time.forEach((t,i)=>{const h=+t.slice(11,13);if(h===0)g+=`<line x1="$
 if(h%6===0)g+=`<text x="${X(i)}" y="245" font-size="11" fill="#8fb0b6" text-anchor="middle">${pad(h)}h</text>`});
 const nowL=new Date(Date.now()+d.utc_offset_seconds*1000).toISOString().slice(0,13),ni=H.time.findIndex(t=>t.slice(0,13)===nowL);
 const bars=Pr.map((v,i)=>`<rect x="${X(i)-4}" y="${225-v/pr1*45}" width="8" height="${v/pr1*45}" fill="#4aa3ff" opacity=".7"/>`).join('');
-$('#chart').innerHTML=`<svg width="${n*10}" height="255">${g}${bars}${line(P,yP,'#9b5de5')}${line(T,yT,'#ff8a3d')}${line(W,yW,'#1fa67a',1)}${ni>=0?`<line x1="${X(ni)}" x2="${X(ni)}" y1="10" y2="225" stroke="#e63946" stroke-width="2"/>`:''}</svg>`;
+$('#chart').innerHTML=`<svg width="${n*10}" height="255">${g}${bars}${line(P,yP,'#9b5de5')}${line(T,yT,'#ff8a3d')}${line(W,yW,'#1fa67a',1)}${ni>=0?`<line x1="${X(ni)}" x2="${X(ni)}" y1="10" y2="225" stroke="#e63946" stroke-width="2"/>`:''}<line id="cur" x1="0" x2="0" y1="10" y2="225" stroke="#ff8a3d" stroke-width="2" opacity="0"/><circle id="c1" r="5" fill="#ff8a3d" stroke="#fff" stroke-width="2" opacity="0"/><circle id="c2" r="5" fill="#9b5de5" stroke="#fff" stroke-width="2" opacity="0"/><circle id="c3" r="5" fill="#1fa67a" stroke="#fff" stroke-width="2" opacity="0"/></svg>`;
+const sel=i=>{i=Math.max(0,Math.min(n-1,i));const x=X(i),t=H.time[i];
+const dot=(id,y)=>{const c=$('#'+id);c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('opacity',1)};
+const cu=$('#cur');cu.setAttribute('x1',x);cu.setAttribute('x2',x);cu.setAttribute('opacity',.8);
+dot('c1',yT(T[i]));dot('c2',yP(P[i]));dot('c3',yW(W[i]));
+$('#tiph').innerHTML='<b>'+t.slice(8,10)+'/'+t.slice(5,7)+' · '+t.slice(11,16)+'</b>';
+$('#tip').innerHTML='<div><b style="color:#ff8a3d">'+T[i].toFixed(1)+'</b>Temp °C</div><div><b style="color:#9b5de5">'+P[i].toFixed(1)+'</b>Presión hPa</div><div><b style="color:#1fa67a">'+W[i].toFixed(0)+'</b>Viento km/h</div><div><b style="color:#4aa3ff">'+Pr[i].toFixed(1)+'</b>Lluvia mm</div>'};
+const svg=$('#chart svg'),ix=e=>Math.floor((e.clientX-svg.getBoundingClientRect().left)/10);
+svg.addEventListener('pointerdown',e=>sel(ix(e)));svg.addEventListener('pointermove',e=>{if(e.buttons)sel(ix(e))});
+sel(ni>=0?ni:0);
 $('#leg').innerHTML='<span><i style="background:#ff8a3d"></i>Temp</span><span><i style="background:#9b5de5"></i>Presión</span><span><i style="background:#1fa67a"></i>Viento</span><span><i style="background:#4aa3ff"></i>Lluvia</span>';
 $('#rng').textContent=`Temp ${t0.toFixed(0)}–${t1.toFixed(0)} °C · Presión ${p0.toFixed(0)}–${p1.toFixed(0)} hPa · Viento hasta ${Math.max(...W).toFixed(0)} km/h · Lluvia máx ${Math.max(...Pr).toFixed(1)} mm`;
 if(ni>=0){const f=Math.min(ni+6,n-1),dp=P[f]-P[ni],tr=Math.abs(dp)<1?'estable ➡️':dp>0?'subiendo ⬆️':'bajando ⬇️';
