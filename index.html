@@ -59,7 +59,7 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 </section>
 <section id="s-map">
 <div class="row" style="margin-bottom:8px"><button class="btn alt" onclick="miGPS(false)">📍 Mi posición</button><button class="btn" onclick="marcarAqui()">🎣 Marcar pique aquí</button></div>
-<div class="card" style="padding:8px;margin-bottom:8px"><b style="font-size:13px">Mostrar piques de:</b><div class="row" style="margin:6px 0"><select id="fm-map"><option value="all">Todos</option><option value="d">Un día</option><option value="m">Un mes</option><option value="y">Un año</option></select><input id="fv-map" style="display:none"></div><div class="mut" id="mcnt"></div></div><div id="map"></div><div class="mut" id="mapinfo">Toca el mapa para elegir un punto.</div>
+<div class="card" style="padding:8px;margin-bottom:8px"><b style="font-size:13px">Mostrar piques de:</b><div class="row" style="margin:6px 0"><select id="fm-map"><option value="all">Todos</option><option value="d">Un día</option><option value="m">Un mes</option><option value="y">Un año</option></select><input id="fv-map" style="display:none"></div><div class="leg" style="margin-top:2px"><span><i style="background:#7b8d93"></i>Sin pique</span><span><i style="background:#d4a017"></i>Flojo</span><span><i style="background:#1fa67a"></i>Bueno</span><span><i style="background:#e8590c"></i>Excelente</span></div><div class="mut" id="mcnt"></div></div><div id="map"></div><div class="mut" id="mapinfo">Toca el mapa para elegir un punto.</div>
 </section>
 <section id="s-pq">
 <div class="card"><b>Nuevo registro</b>
@@ -177,7 +177,7 @@ return`<div class="hr ${s>=top&&s>=60?'best':''}"><span class="t">${pad(h)}:00</
 const NOM=['Sin pique','Flojo','Bueno','Excelente'],COL=['#7b8d93','#d4a017','#1fa67a','#e8590c'];
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const FL={pq:{m:'all',v:''},map:{m:'all',v:''}};
-function icono(e){return L.divIcon({html:'<div class="pin" style="background:'+COL[e]+'">'+NOM[e]+'</div>',className:'',iconSize:[80,22],iconAnchor:[40,11]})}
+function icono(e){return L.divIcon({html:'<svg viewBox="0 0 30 42" width="30" height="42" style="filter:drop-shadow(0 2px 2px #0007)"><path d="M15 1C7.3 1 1 7.2 1 14.8 1 25 15 41 15 41s14-16 14-26.2C29 7.2 22.7 1 15 1z" fill="'+COL[e]+'" stroke="#fff" stroke-width="2"/><circle cx="15" cy="15" r="5.5" fill="#fff"/></svg>',className:'',iconSize:[30,42],iconAnchor:[15,41],popupAnchor:[0,-38]})}
 function initMap(){if(map)return;map=L.map('map').setView([loc.lat,loc.lon],11);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
 layer=L.layerGroup().addTo(map);map.on('click',e=>setPick(e.latlng.lat,e.latlng.lng));pintar()}
