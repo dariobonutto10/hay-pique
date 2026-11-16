@@ -37,9 +37,9 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 .hr .s{width:62px;font-size:12px;color:var(--acc)}
 .chip{display:inline-block;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:4px 10px;margin:3px 3px 0 0;font-size:13px}
 .best{background:#ffe9d6;border-radius:6px;font-weight:700;color:#7a3300}
-#map{height:calc(100vh - 230px);min-height:320px;border-radius:14px}
+#map{height:calc(100vh - 340px);min-height:280px;border-radius:14px}
 .pq{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
-.res{padding:8px;border-bottom:1px solid var(--line)}
+.res{padding:8px;border-bottom:1px solid var(--line)}.pin{width:80px;text-align:center;color:#fff;font-size:12px;font-weight:700;border-radius:12px;padding:3px 0;border:2px solid #fff;box-shadow:0 1px 4px #0006}.bd{display:inline-block;color:#fff;border-radius:10px;padding:1px 9px;font-size:12px;font-weight:700}
 .mut{color:var(--mut);font-size:13px}
 </style></head><body>
 <header>
@@ -49,7 +49,7 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 <main>
 <section id="s-clima" class="on">
 <div class="card"><div class="row"><input id="q" placeholder="Buscar localidad…"><button class="btn alt" style="flex:none" onclick="buscar()">Buscar</button></div>
-<button class="btn" style="width:100%" onclick="miGPS(true)">📍 Usar mi ubicación</button><div id="res"></div></div>
+<button class="btn" style="width:100%" onclick="miGPS(true)">📍 Usar mi ubicación</button><button class="btn alt" id="favbtn" style="width:100%;margin-top:8px" onclick="togFav()">☆ Guardar esta localidad en favoritos</button><div id="res"></div><div id="favs"></div></div>
 <div class="card"><div id="now"></div><div class="leg" id="leg"></div><div class="tiph" id="tiph"></div><div class="tip" id="tip"></div><div class="row" style="align-items:center;margin:6px 0"><button class="btn alt" onclick="zoom(1/1.5)">🔍 −</button><div class="mut" id="zl" style="text-align:center">×1</div><button class="btn alt" onclick="zoom(1.5)">🔍 +</button><button class="btn alt" onclick="zoomTo(10)">Restablecer</button></div><div class="sc" id="chart"></div><div class="mut">Toca la gráfica para ver los valores. Pellizca con dos dedos o usa 🔍 para ampliar la escala.</div><div class="mut" id="rng"></div></div>
 </section>
 <section id="s-sol">
@@ -59,17 +59,17 @@ input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px soli
 </section>
 <section id="s-map">
 <div class="row" style="margin-bottom:8px"><button class="btn alt" onclick="miGPS(false)">📍 Mi posición</button><button class="btn" onclick="marcarAqui()">🎣 Marcar pique aquí</button></div>
-<div id="map"></div><div class="mut" id="mapinfo">Toca el mapa para elegir un punto.</div>
+<div class="card" style="padding:8px;margin-bottom:8px"><b style="font-size:13px">Mostrar piques de:</b><div class="row" style="margin:6px 0"><select id="fm-map"><option value="all">Todos</option><option value="d">Un día</option><option value="m">Un mes</option><option value="y">Un año</option></select><input id="fv-map" style="display:none"></div><div class="mut" id="mcnt"></div></div><div id="map"></div><div class="mut" id="mapinfo">Toca el mapa para elegir un punto.</div>
 </section>
 <section id="s-pq">
 <div class="card"><b>Nuevo registro</b>
 <input id="pc" readonly placeholder="Elige un punto en el mapa o usa tu GPS">
-<input id="pf" type="datetime-local">
-<select id="pe"><option value="0">😴 Sin pique</option><option value="1">🙂 Flojo</option><option value="2" selected>😄 Bueno</option><option value="3">🔥 Excelente</option></select>
+<input id="pf" type="datetime-local"><div class="mut" id="pfh" style="margin:-4px 0 8px"></div>
+<select id="pe"><option value="0">Sin pique (ninguna picada)</option><option value="1">Flojo (pocas picadas)</option><option value="2" selected>Bueno (picadas seguidas)</option><option value="3">Excelente (no paraba)</option></select>
 <div class="row"><input id="pd" type="number" step="0.1" placeholder="Profundidad (m)"><input id="pb" placeholder="Carnada"></div>
 <textarea id="pn" rows="2" placeholder="Notas (opcional)"></textarea>
 <div class="row"><button class="btn" onclick="guardar()">Guardar pique</button><button class="btn alt" onclick="go('map')">Elegir en mapa</button></div></div>
-<div class="card"><b>Mis piques</b> <span class="mut" id="cnt"></span><div id="lista"></div></div>
+<div class="card"><b>Mis piques</b> <span class="mut" id="cnt"></span><div class="row" style="margin:6px 0"><select id="fm-pq"><option value="all">Todos</option><option value="d">Un día</option><option value="m">Un mes</option><option value="y">Un año</option></select><input id="fv-pq" style="display:none"></div><div id="lista"></div></div>
 </section>
 </main>
 <nav>
@@ -88,8 +88,8 @@ const pad=n=>String(n).padStart(2,'0'),hm=d=>pad(d.getHours())+':'+pad(d.getMinu
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
 function go(t){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
 document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='s-'+t));
-if(t==='map'){initMap();setTimeout(()=>map&&map.invalidateSize(),100)}if(t==='sol')solunar();}
-function setLoc(l){loc=l;SEL=null;sv('hp_loc',l);$('#locname').textContent=l.name;clima();solunar();if(map)map.setView([l.lat,l.lon],11)}
+if(t==='map'){initMap();setTimeout(()=>map&&map.invalidateSize(),100)}if(t==='sol')solunar();if(t==='pq')tick();}
+function setLoc(l){loc=l;SEL=null;sv('hp_loc',l);$('#locname').textContent=l.name;clima();solunar();if(map)map.setView([l.lat,l.lon],11);favUI()}
 /* búsqueda */
 async function buscar(){const q=$('#q').value.trim();if(!q)return;
 try{const r=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=es&name='+encodeURIComponent(q))).json();
@@ -174,7 +174,10 @@ $('#sinfo').innerHTML=`<b>${ph}</b> · iluminación ${Math.round(ill*100)}%<br>`
 $('#stab').innerHTML=sc.map((s,h)=>{const n=Math.max(1,Math.round(s/20)),col=s>=75?'#ff8a3d':s>=50?'#ffc46b':'#7fb6c2';
 return`<div class="hr ${s>=top&&s>=60?'best':''}"><span class="t">${pad(h)}:00</span><div class="bar"><div style="width:${s}%;background:${col}"></div></div><span class="s">${'★'.repeat(n)}${s>=top&&s>=60?' 🎣':''}</span></div>`}).join('')}
 /* mapa */
-function icono(e){return L.divIcon({html:`<div style="font-size:26px">${['😴','🙂','😄','🔥'][e]}</div>`,className:'',iconSize:[28,28],iconAnchor:[14,14]})}
+const NOM=['Sin pique','Flojo','Bueno','Excelente'],COL=['#7b8d93','#d4a017','#1fa67a','#e8590c'];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FL={pq:{m:'all',v:''},map:{m:'all',v:''}};
+function icono(e){return L.divIcon({html:'<div class="pin" style="background:'+COL[e]+'">'+NOM[e]+'</div>',className:'',iconSize:[80,22],iconAnchor:[40,11]})}
 function initMap(){if(map)return;map=L.map('map').setView([loc.lat,loc.lon],11);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(map);
 layer=L.layerGroup().addTo(map);map.on('click',e=>setPick(e.latlng.lat,e.latlng.lng));pintar()}
@@ -182,16 +185,40 @@ function setPick(a,o){pick={lat:a,lon:o};if(map){if(mk)map.removeLayer(mk);mk=L.
 $('#mapinfo').innerHTML=`Punto: ${a.toFixed(5)}, ${o.toFixed(5)} · <a href="#" onclick="verClima();return false">Ver clima aquí</a>`;$('#pc').value=a.toFixed(5)+', '+o.toFixed(5)}
 function verClima(){setLoc({lat:pick.lat,lon:pick.lon,name:`Punto ${pick.lat.toFixed(3)}, ${pick.lon.toFixed(3)}`});go('clima')}
 function marcarAqui(){if(!pick)return alert('Toca el mapa o usa Mi posición primero.');go('pq')}
-function pintar(){if(!layer)return;layer.clearLayers();piques.forEach(p=>L.marker([p.lat,p.lon],{icon:icono(p.e)}).addTo(layer).bindPopup(`<b>${['Sin pique','Flojo','Bueno','Excelente'][p.e]}</b><br>${new Date(p.f).toLocaleString('es')}<br>Prof: ${p.d||'-'} m<br>Carnada: ${p.b||'-'}<br>${p.n||''}`))}
+function pintar(fit){if(!layer)return;layer.clearLayers();const L2=filtrar('map');
+L2.forEach(p=>L.marker([p.lat,p.lon],{icon:icono(p.e)}).addTo(layer).bindPopup('<b>'+NOM[p.e]+'</b><br>'+new Date(p.f).toLocaleString('es')+'<br>Prof: '+(esc(p.d)||'-')+' m<br>Carnada: '+(esc(p.b)||'-')+'<br>'+esc(p.n)));
+$('#mcnt').textContent=L2.length+' de '+piques.length+' piques';
+if(fit&&L2.length)map.fitBounds(L2.map(p=>[p.lat,p.lon]),{maxZoom:15,padding:[40,40]})}
+/* filtros día / mes / año */
+function initFiltro(k,cb){const m=$('#fm-'+k),v=$('#fv-'+k);
+const apply=()=>{FL[k]={m:m.value,v:v.value};cb()};
+m.onchange=()=>{if(m.value==='all'){v.style.display='none';v.value=''}else{const t=nowLocal();v.style.display='';v.type=m.value==='d'?'date':m.value==='m'?'month':'number';v.value=m.value==='d'?t.slice(0,10):m.value==='m'?t.slice(0,7):t.slice(0,4)}apply()};
+v.oninput=apply;v.onchange=apply}
+function filtrar(k){const f=FL[k];return f.m==='all'||!f.v?piques:piques.filter(p=>p.f.startsWith(f.v))}
 /* piques */
+let pfEdit=false;
 function nowLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
+function tick(){if(!pfEdit)$('#pf').value=nowLocal()}
+function pfState(){$('#pfh').innerHTML=pfEdit?'Hora editada a mano · <a href="#" onclick="pfAuto();return false">usar hora actual</a>':'⏱ Hora automática: se guarda la hora actual al registrar'}
+function pfAuto(){pfEdit=false;tick();pfState()}
+$('#pf').addEventListener('input',()=>{pfEdit=true;pfState()});
+setInterval(tick,15000);document.addEventListener('visibilitychange',tick);
 function guardar(){if(!pick)return alert('Elige un punto en el mapa o usa tu GPS.');
-piques.unshift({id:Date.now(),lat:pick.lat,lon:pick.lon,f:$('#pf').value||nowLocal(),e:+$('#pe').value,d:$('#pd').value,b:$('#pb').value,n:$('#pn').value});
-sv('hp_pq',piques);$('#pd').value=$('#pb').value=$('#pn').value='';lista();pintar()}
+piques.unshift({id:Date.now(),lat:pick.lat,lon:pick.lon,f:pfEdit&&$('#pf').value?$('#pf').value:nowLocal(),e:+$('#pe').value,d:$('#pd').value,b:$('#pb').value,n:$('#pn').value});
+sv('hp_pq',piques);$('#pd').value=$('#pb').value=$('#pn').value='';pfEdit=false;tick();pfState();lista();pintar()}
 function borrar(id){if(!confirm('¿Borrar este registro?'))return;piques=piques.filter(p=>p.id!==id);sv('hp_pq',piques);lista();pintar()}
 function ver(id){const p=piques.find(x=>x.id===id);go('map');setTimeout(()=>map.setView([p.lat,p.lon],15),150)}
-function lista(){$('#cnt').textContent='('+piques.length+')';
-$('#lista').innerHTML=piques.map(p=>`<div class="pq"><div onclick="ver(${p.id})">${['😴','🙂','😄','🔥'][p.e]} <b>${new Date(p.f).toLocaleString('es',{dateStyle:'short',timeStyle:'short'})}</b><br><span class="mut">${p.d?p.d+' m · ':''}${p.b||'sin carnada'}${p.n?' · '+p.n:''}</span></div><button class="btn alt" onclick="borrar(${p.id})">🗑</button></div>`).join('')||'<p class="mut">Aún no hay registros.</p>'}
-$('#pf').value=nowLocal();lista();clima();solunar();
+function lista(){const L2=filtrar('pq').slice().sort((a,b)=>b.f.localeCompare(a.f));
+$('#cnt').textContent='('+L2.length+(L2.length!==piques.length?' de '+piques.length:'')+')';
+$('#lista').innerHTML=L2.map(p=>`<div class="pq"><div onclick="ver(${p.id})"><span class="bd" style="background:${COL[p.e]}">${NOM[p.e]}</span> <b>${new Date(p.f).toLocaleString('es',{dateStyle:'short',timeStyle:'short'})}</b><br><span class="mut">${p.d?esc(p.d)+' m · ':''}${esc(p.b)||'sin carnada'}${p.n?' · '+esc(p.n):''}</span></div><button class="btn alt" onclick="borrar(${p.id})">🗑</button></div>`).join('')||'<p class="mut">No hay registros para este filtro.</p>'}
+/* favoritos del clima */
+let favs=ld('hp_fav',[]);
+const same=(a,b)=>Math.abs(a.lat-b.lat)<.0005&&Math.abs(a.lon-b.lon)<.0005;
+function favUI(){const is=favs.some(f=>same(f,loc));$('#favbtn').textContent=is?'★ Quitar esta localidad de favoritos':'☆ Guardar esta localidad en favoritos';
+$('#favs').innerHTML=favs.length?'<div class="mut" style="margin-top:8px">Favoritos:</div>'+favs.map((f,i)=>`<span class="chip" onclick="irFav(${i})">⭐ ${esc(f.name)} <b onclick="event.stopPropagation();delFav(${i})" style="margin-left:6px">✕</b></span>`).join(''):''}
+function togFav(){const i=favs.findIndex(f=>same(f,loc));if(i>=0)favs.splice(i,1);else{const n=prompt('Nombre del favorito',loc.name);if(n===null)return;favs.push({lat:loc.lat,lon:loc.lon,name:n.trim()||loc.name})}sv('hp_fav',favs);favUI()}
+function irFav(i){setLoc({...favs[i]})}
+function delFav(i){if(confirm('¿Quitar «'+favs[i].name+'» de favoritos?')){favs.splice(i,1);sv('hp_fav',favs);favUI()}}
+tick();pfState();initFiltro('pq',lista);initFiltro('map',()=>pintar(true));favUI();lista();clima();solunar();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script></body></html>
